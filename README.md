@@ -7,6 +7,9 @@
 
  解压后修改appsetting.json中的配置,默认只需要填写"AccessKeyId" ,"AccessKeySecret"
 
+
+
+
 ### linux(arm,amd)
 
  下载对应版本 `tar zxvf` 进入文件夹 `chmod +x AliyunTrafficCheck` 后`./AliyunTrafficCheck`
