@@ -1,99 +1,30 @@
-name: .NET Build and Publish
+
+name: Build Docker ali Image and Upload Artifact
 
 on:
   push:
-    branches: [main, feature/*]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '8.0.x'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Build and Publish for Linux-x64
-      run: |
-        dotnet publish -c Release -r linux-x64 -p:PublishSingleFile=true -o ./publish/linux-x64/
-        cp appsettings.json ./publish/linux-x64/
-
-    - name: Build and Publish for Linux-arm64
-      run: |
-        dotnet publish -c Release -r linux-arm64 -p:PublishSingleFile=true -o ./publish/linux-arm64/
-        cp appsettings.json ./publish/linux-arm64/
-     
-    - name: Build and Publish for Windows-x64
-      run: |
-        dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true  -o ./publish/win-x64/
-        cp appsettings.json ./publish/win-x64/
-
-    - name: Get current date
-      id: date
-      run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S')"
-
-    - name: Create tar.gz for Linux-x64
-      run: |
-        tar -czvf AliyunTrafficCheck_linux_amd64.tar.gz -C ./publish/linux-x64/ .
-        mv AliyunTrafficCheck_linux_amd64.tar.gz ./publish/
-
-    - name: Create tar.gz for Linux-arm64
-      run: |
-        tar -czvf AliyunTrafficCheck_linux_arm64.tar.gz -C ./publish/linux-arm64/ .
-        mv AliyunTrafficCheck_linux_arm64.tar.gz ./publish/
-
-    - name: Create zip for Windows-x64
-      run: |
-        zip -j AliyunTrafficCheck_win64.zip ./publish/win-x64/*
-        mv AliyunTrafficCheck_win64.zip ./publish/
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: release-${{ steps.date.outputs.date }}
-        release_name: Release-${{ steps.date.outputs.date }}
-        draft: false
-        prerelease: false
-        body: "Description of the release"
-
-    - name: Upload Release Asset for Linux-x64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./publish/AliyunTrafficCheck_linux_amd64.tar.gz
-        asset_name: AliyunTrafficCheck_linux_amd64.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset for Linux-arm64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./publish/AliyunTrafficCheck_linux_arm64.tar.gz
-        asset_name: AliyunTrafficCheck_linux_arm64.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset for Windows-x64
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./publish/AliyunTrafficCheck_win64.zip
-        asset_name: AliyunTrafficCheck_win64.zip
-        asset_content_type: application/zip
+      - name: Build the Docker image
+        run: |
+          docker buildx build --platform linux/amd64 -t ali --load .
+      - name: Save Docker image as tar
+        run: |
+          docker save ali -o ali.tar
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ali_amd
+          path: ali.tar
