@@ -3,6 +3,9 @@
 # 食用方法
 ### win 
 
+
+
+
  下载Release中的AliyunTrafficCheck_win64.zip
 
  解压后修改appsetting.json中的配置,默认只需要填写"AccessKeyId" ,"AccessKeySecret"
